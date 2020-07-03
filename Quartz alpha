@@ -651,7 +651,7 @@ M_teo=alg_6_Ei(no,ne,go,ge,ang_i,eje,normal,angulo,ang_c,lamda,thick,sens,ni)
 
 val_red=[]
 M_red=[]
-datos_totales=5000
+datos_totales=30000
 for a in range(datos_totales):
     no=random.uniform(1.5,1.6)
     ne=random.uniform(1.5,1.6)
@@ -892,7 +892,7 @@ M_1=np.zeros((4,4),dtype=complex)
 k=0
 
 for i in range(3000):
-    history=model.fit(x, y, epochs=1, batch_size=100, verbose=1,validation_data=(x_v,y_v))
+    history=model.fit(x, y, epochs=1, batch_size=1000, verbose=1,validation_data=(x_v,y_v))
     predictions = model.predict(x)
 
 
