@@ -888,7 +888,6 @@ error_ne=[]
 
 
 M_o=np.ones((4,4),dtype=complex)*2
-M_1=np.zeros((4,4),dtype=complex)
 k=0
 
 for i in range(3000):
@@ -909,8 +908,6 @@ for i in range(3000):
     print(model.predict((M_teo.real).reshape(1,16)))
 
     print(model.predict((M_o.real).reshape(1,16)))
-
-    print(model.predict((M_1.real).reshape(1,16)))
     if history.history['val_mean_squared_error'][0]<0.4:
         break
 print('')
