@@ -1,3 +1,4 @@
+
 import numpy as np
 import cmath as math
 
@@ -15,26 +16,62 @@ from tensorflow.python.keras.callbacks import TensorBoard
 """  datos iniciales"""
 
 
-ang_c=43
-angulo=0.001
+ang_c=29
+angulo=0.1
 
 ni=1
 
-no=1.53917
-ne=1.54811
-go=3*10**-5
+no=1.6589
+ne=1.5430
 
-ge=-1.92*go
+go=0
+ge=0
 eo=no*no
 ee=ne*ne
 
-thick= 6.35
-lamda= 762*10**-6
+thick= 3
+lamda= 853*10**-6
 
 sens=10**-8
 
 
+M_exp=np.zeros((4,4),dtype=complex)
 
+M_exp[0][0]=1
+M_exp[0][1]= -0.0142
+M_exp[0][2]=-0.0516
+M_exp[0][3]=-0.0106
+M_exp[1][0]=-0.0161
+M_exp[1][1]=0.9753   
+M_exp[1][2]= 0.1540
+M_exp[1][3]=-0.0359
+M_exp[2][0]=0.0015
+M_exp[2][1]=0.0955 
+M_exp[2][2]=0.0259
+M_exp[2][3]=0.0062
+M_exp[3][0]=0.0019
+M_exp[3][1]=-0.0105
+M_exp[3][2]=-0.0116
+M_exp[3][3]=0.0112
+
+M_KDP=np.zeros((4,4),dtype=complex)
+
+M_KDP[0][0]=1
+M_KDP[0][1]=5.09981966e-01
+M_KDP[0][2]=7.50900630e-01
+M_KDP[0][3]=0
+M_KDP[1][0]=7.50355597e-01
+M_KDP[1][1]=6.59768851e-01
+M_KDP[1][2]=5.51185290e-01
+M_KDP[1][3]=0
+M_KDP[2][0]=5.10783555e-01
+M_KDP[2][1]=2.92114256e-02
+M_KDP[2][2]=6.60388652e-01
+M_KDP[2][3]=0
+M_KDP[3][0]=0
+M_KDP[3][1]=0
+M_KDP[3][2]=0
+M_KDP[3][3]=4.19602954e-01
 
 def var_i(angulo,ang_c):
     ang=angulo*math.pi/180
@@ -78,7 +115,7 @@ def tensores(no,ne,go,ge,ang_i,eje,normal):
     else:
         alfa = math.acos(np.dot(np.transpose(normal),eje))/(np.linalg.norm(normal)*np.linalg.norm(eje))
         beta =  mt.atan2(eje[1].real,eje[0].real)
-
+#    print(alfa,beta)
     R_1=np.zeros((3,3),dtype=complex)
     R_1[0][0]=math.cos(alfa)
     R_1[0][2]=-math.sin(alfa)
@@ -123,12 +160,12 @@ def kt_bir(ni,ee,eo,ki,normal,go,ge,eje,sens):
         v=4*ee_p*go*go*math.cos(ang_t)**2+eo_p*(go+ge)*(go+ge)*math.sin(ang_t)**2
 
         w=((go-ge)**2)*(math.sin(ang_t)**2)*(math.cos(ang_t)**2)
-        
+
         a=eo_p*(ee_p+e)+v
         b=eo_p**2*(ee_p+e)**2
         c=2*eo_p*v*(ee_p+e)+v**2
         d=4*(e+w)*eo_p**2*ee_p
-        
+
         no=math.sqrt(b+c-d)
         no=(-no+a)/(2*(e+w))
         no=math.sqrt(no)
@@ -166,29 +203,29 @@ def campos(kt,n,eG,gD):
     M=eG+np.dot(n*KT+1j*gD,n*KT+1j*gD)
     eigte=np.linalg.eig(M)
     eigte_cs=sorted(abs(eigte[0]))
-
+#    print('')
+#    print(eigte_cs)
     he=0
     he_2=0
     E=np.zeros((3,1),dtype=complex)
     for b in range(len(eigte[0])):
-        
         
         if (abs(abs(eigte[0][b])-eigte_cs[0]))<10**-20:
             he=b
         if (abs(abs(eigte[0][b])-eigte_cs[1]))<10**-20:
             he_2=b
 
-    
     E_=np.zeros((3,1),dtype=complex)
     for a in range(len(E_)):
     
         E[a]=eigte[1][a][he]
         E_[a]=eigte[1][a][he_2]
     
-    
-    if np.linalg.norm(np.dot(M,E))<10**-10:
-        E=E
-
+#    if np.linalg.norm(np.dot(M,E))<10**-10:
+#        E=E
+#    else:
+#        E=E_
+#        print(1)
     H= np.dot(n*KT+1j*gD,E)
     H_=np.dot(n*KT+1j*gD,E_)
     return E,H,E_,H_
@@ -196,9 +233,20 @@ def campos(kt,n,eG,gD):
 Eto,Hto,Eto_,Hto_=campos(kto,no_n,eD,gD)
 Ete,Hte,Ete_,Hte_=campos(kte,ne_n,eD,gD)
 
-if abs(np.vdot(Eto,Ete))>0.8:
-    Eto=Eto_
-    Hto=Hto_
+#if abs(np.vdot(Eto,Ete))>0.8:
+#    Eto=Eto_
+#    Hto=Hto_
+#    
+if abs(np.dot(np.transpose(Eto),Ete).real-1)<=10**-10 or np.dot(np.transpose(Eto),Ete).real>1:
+    if np.vdot(Ete,Ete_)==0:
+        Ete=Ete_
+    else:
+        Eto=Eto_
+if abs(np.dot(np.transpose(Hto),Hte).real-1)<=10**-10 or np.dot(np.transpose(Hto),Hte).real>1:
+    if np.vdot(Hte,Hte_)==0:
+        Hte=Hte_
+    else:
+        Hto=Hto_
 
 def kr_nbir(ni,ki,normal,Ei):
     kr=ni*ki-2*ni*np.dot(np.transpose(ki),normal)*normal
@@ -238,7 +286,7 @@ kr,Ers,Erp,Hrs,Hrp,Hi=kr_nbir(ni,ki,normal,Ei)
 """ calculo OPL"""
 def OPL (kto,kte,thick,ne,no,Eto,Ete,Hto,Hte,lam,angulo):
     ang_i=angulo*math.pi/180
-
+#    ang_i=angulo
     phi_to=np.cross(np.transpose(Eto),np.transpose(np.conjugate(Hto)))[0]
     phi_to=phi_to.real
     phi_to=phi_to/np.linalg.norm(phi_to)
@@ -261,11 +309,11 @@ def OPL (kto,kte,thick,ne,no,Eto,Ete,Hto,Hte,lam,angulo):
 
     OPD=OPLe-OPLo+(yto-yte)*math.sin(ang_i)
     phase=OPD*2*math.pi/lam
-
+#    phase=phase*math.pi/180
     
     return phase,OPD
 
-phase,OPD=OPL (kto,kte,thick,ne_n,no_n,Eto,Ete,Hto,Hte,lamda,angulo)
+phase,OPD=OPL(kto,kte,thick,ne_n,no_n,Eto,Ete,Hto,Hte,lamda,angulo)
 
 
 """ calculo fresnel"""
@@ -277,7 +325,8 @@ def Fresnel(ki,Ei,Hi,Eto,Ete,Ero,Ere,Hto,Hte,Hro,Hre):
         q[1]=1
     s1=np.cross(np.transpose(q),np.transpose(normal))[0]
     s2=np.cross(np.transpose(normal),np.transpose(s1))[0]
-
+    
+#    print(s1,s2)
     F=np.zeros((4,4),dtype=complex)
     F[0][0]=np.dot(s1,Eto)
     F[0][1]=np.dot(s1,Ete)
@@ -296,7 +345,7 @@ def Fresnel(ki,Ei,Hi,Eto,Ete,Ero,Ere,Hto,Hte,Hro,Hre):
     F[3][2]=np.dot(-s2,Hro)
     F[3][3]=np.dot(-s2,Hre)
     
-
+#    print(F.real)
     F_1=np.linalg.inv(F)
     
     F_c=np.zeros((4,1),dtype=complex)
@@ -371,11 +420,11 @@ def kr_nobir(ni,ee,eo,ki,normal,go,ge,eje,sens):
 noo,noe,kroe,kroo=kr_nobir(no_n,ee,eo,kto,normal,go,ge,eje,sens)
 neo,nee,kree,kreo=kr_nobir(ne_n,ee,eo,kte,normal,go,ge,eje,sens)
 
-Eroo,Hroo,Eroo_,e=campos(kroo,noo,eD,gD)
-Eroe,Hroe,Eroe_,e=campos(kroe,noe,eD,gD)
+Eroo,Hroo,Eroo_,Hroo_=campos(kroo,noo,eD,gD)
+Eroe,Hroe,Eroe_,Hroe_=campos(kroe,noe,eD,gD)
 
-Ereo,Hreo,Ereo_,e=campos(kreo,neo,eD,gD)
-Eree,Hree,Eree_,e=campos(kree,nee,eD,gD)
+Ereo,Hreo,Ereo_,Hreo_=campos(kreo,neo,eD,gD)
+Eree,Hree,Eree_,Hree_=campos(kree,nee,eD,gD)
 
 
 def kt_nobir(ni,ki,normal,Ei,nq):
@@ -392,7 +441,7 @@ def kt_nobir(ni,ki,normal,Ei,nq):
         q=q/np.linalg.norm(q)
     else:
         q=kr
-
+#    print(q)
     Ers=np.cross(np.transpose(q),np.transpose(normal))[0]
     Ers=Ers/np.linalg.norm(Ers)
     
@@ -402,7 +451,7 @@ def kt_nobir(ni,ki,normal,Ei,nq):
     Hrs=Hrs/np.linalg.norm(Hrs)
     Hrp=np.cross(np.transpose(ni*kr),Erp)[0]
     Hrp=Hrp/np.linalg.norm(Hrp)
-
+#    print(Ers)
     return kr,Ers,Erp,Hrs,Hrp
 ktto,Etos,Etop,Htos,Htop=kt_nobir(no_n,kto,normal,Eto,ni)
 ktte,Etes,Etep,Htes,Htep=kt_nobir(ne_n,kte,normal,Ete,ni)
@@ -410,14 +459,17 @@ ktte,Etes,Etep,Htes,Htep=kt_nobir(ne_n,kte,normal,Ete,ni)
 
 def Fresnel_bir(ki,Ets,Etp,Hts,Htp,Ero,Ere,Hro,Hre,Ei,Hi):
     q=ki
+#    print(ki)
     if np.linalg.norm(np.cross(np.transpose(q),np.transpose(normal))[0])==0 :
         q=np.zeros((3,1),dtype=complex)
         q[1]=1
+#        q[2]=1
         q=q/np.linalg.norm(q)
-
+#    print(q)
     s1=np.cross(np.transpose(q),np.transpose(normal))[0]
     s2=np.cross(np.transpose(normal),np.transpose(s1))[0]
     
+
     F=np.zeros((4,4),dtype=complex)
     F[0][0]=np.dot(s1,Ets)
     F[0][2]=np.dot(-s1,Ero)
@@ -435,8 +487,6 @@ def Fresnel_bir(ki,Ets,Etp,Hts,Htp,Ero,Ere,Hro,Hre,Ei,Hi):
     F[3][2]=np.dot(-s2,Hro)
     F[3][3]=np.dot(-s2,Hre)
     
-
-    F_1=np.linalg.inv(F)
     
     F_c=np.zeros((4,1),dtype=complex)
     F_c[0]=np.dot(s1,Ei)
@@ -447,6 +497,9 @@ def Fresnel_bir(ki,Ets,Etp,Hts,Htp,Ero,Ere,Hro,Hre,Ei,Hi):
     else:
         F_c[2]=np.dot(s1,Hi)
         F_c[3]=np.dot(s2,Hi)   
+  
+    F_1=np.linalg.inv(F)
+
     Fi=np.dot(F_1,F_c)
 
     ats=Fi[0]
@@ -455,12 +508,34 @@ def Fresnel_bir(ki,Ets,Etp,Hts,Htp,Ero,Ere,Hro,Hre,Ei,Hi):
     are=Fi[3]
     
     return ats, atp , aro, are
+if abs(np.dot(np.transpose(Hroe),Hroo).real-1)<=10**-10 or np.dot(np.transpose(Hroe),Hroo).real>1:
+    if np.vdot(Hroe,Hroe_)==0:
+        Hroe=Hroe_
+    else:
+        Hroo=Hroo_
+if abs(np.dot(np.transpose(Eroe),Eroo).real-1)<=10**-10 or np.dot(np.transpose(Eroe),Eroo).real>1:
+    if np.vdot(Eroe,Eroe_)==0:
+        Eroe=Eroe_
+    else:
+        Eroo=Eroo_    
+if abs(np.dot(np.transpose(Hree),Hreo).real-1)<=10**-10 or np.dot(np.transpose(Hree),Hreo).real>1:
+    if np.vdot(Hree,Hree_)==0:
+        Hree=Hree_
+    else:
+        Hreo=Hreo_  
+if abs(np.dot(np.transpose(Eree),Ereo).real-1)<=10**-10 or np.dot(np.transpose(Eree),Ereo).real>1:
+    if np.vdot(Eree,Eree_)==0:
+        Eree=Eree_
+    else:
+        Ereo=Ereo_  
+    
 
 atos, atop , aroo, aroe=Fresnel_bir(kto,Etos,Etop,Htos,Htop,Eroo,Eroe,Hroo,Hroe,Eto,Hto)
 
 ates, atep , areo, aree=Fresnel_bir(kte,Etes,Etep,Htes,Htep,Ereo,Eree,Hreo,Hree,Ete,Hte)
 
 
+#print(phase)
 Eout_s=ato*atos+ate*ates*math.exp(-1j*phase)
 Eout_p=ato*atop+ate*atep*math.exp(-1j*phase)
 
@@ -485,10 +560,20 @@ def algoritmo(no,ne,go,ge,ang_i,eje,normal,angulo,ang_c,lamda,thick,sens,ni,Ei):
     
     Eto,Hto,Eto_,Hto_=campos(kto,no_n,eD,gD)
     Ete,Hte,Ete_,Hte_=campos(kte,ne_n,eD,gD)
-    
-    if abs(np.vdot(Eto,Ete))>0.8:
-        Eto=Eto_
-        Hto=Hto_
+#    
+#    if abs(np.vdot(Eto,Ete))>0.8:
+#        Eto=Eto_
+#        Hto=Hto_
+    if abs(np.dot(np.transpose(Eto),Ete).real-1)<=10**-10 or np.dot(np.transpose(Eto),Ete).real>1:
+        if np.vdot(Ete,Ete_)==0:
+            Ete=Ete_
+        else:
+            Eto=Eto_
+    if abs(np.dot(np.transpose(Hto),Hte).real-1)<=10**-10 or np.dot(np.transpose(Hto),Hte).real>1:
+        if np.vdot(Hte,Hte_)==0:
+            Hte=Hte_
+        else:
+            Hto=Hto_
     kr,Ers,Erp,Hrs,Hrp,Hi=kr_nbir(ni,ki,normal,Ei)
     
     ato, ate, ars, arp=Fresnel(ki,Ei,Hi,Eto,Ete,Ers,Erp,Hto,Hte,Hrs,Hrp)
@@ -499,13 +584,32 @@ def algoritmo(no,ne,go,ge,ang_i,eje,normal,angulo,ang_c,lamda,thick,sens,ni,Ei):
     noo,noe,kroe,kroo=kr_nobir(no_n,ee,eo,kto,normal,go,ge,eje,sens)
     neo,nee,kree,kreo=kr_nobir(ne_n,ee,eo,kte,normal,go,ge,eje,sens)
     
-    Eroo,Hroo,Eroo_,e=campos(kroo,noo,eD,gD)
-    Eroe,Hroe,Eroe_,e=campos(kroe,noe,eD,gD)
-    
-    Ereo,Hreo,Ereo_,e=campos(kreo,neo,eD,gD)
-    Eree,Hree,Eree_,e=campos(kree,nee,eD,gD)
+    Eroo,Hroo,Eroo_,Hroo_=campos(kroo,noo,eD,gD)
+    Eroe,Hroe,Eroe_,Hroe_=campos(kroe,noe,eD,gD)
 
-        
+    Ereo,Hreo,Ereo_,Hreo_=campos(kreo,neo,eD,gD)
+    Eree,Hree,Eree_,Hree_=campos(kree,nee,eD,gD)
+    
+    if abs(np.dot(np.transpose(Hroe),Hroo).real-1)<=10**-10 or np.dot(np.transpose(Hroe),Hroo).real>1:
+        if np.vdot(Hroe,Hroe_)==0:
+            Hroe=Hroe_
+        else:
+            Hroo=Hroo_
+    if abs(np.dot(np.transpose(Eroe),Eroo).real-1)<=10**-10 or np.dot(np.transpose(Eroe),Eroo).real>1:
+        if np.vdot(Eroe,Eroe_)==0:
+            Eroe=Eroe_
+        else:
+            Eroo=Eroo_    
+    if abs(np.dot(np.transpose(Hree),Hreo).real-1)<=10**-10 or np.dot(np.transpose(Hree),Hreo).real>1:
+        if np.vdot(Hree,Hree_)==0:
+            Hree=Hree_
+        else:
+            Hreo=Hreo_  
+    if abs(np.dot(np.transpose(Eree),Ereo).real-1)<=10**-10 or np.dot(np.transpose(Eree),Ereo).real>1:
+        if np.vdot(Eree,Eree_)==0:
+            Eree=Eree_
+        else:
+            Ereo=Ereo_   
     ktto,Etos,Etop,Htos,Htop=kt_nobir(no_n,kto,normal,Eto,ni)
     ktte,Etes,Etep,Htes,Htep=kt_nobir(ne_n,kte,normal,Ete,ni)
 
@@ -526,7 +630,8 @@ def algoritmo(no,ne,go,ge,ang_i,eje,normal,angulo,ang_c,lamda,thick,sens,ni,Ei):
     phase_p=np.angle(Eout_p)
     Eout_p=Eout_p/(math.cos(phase_p)+1j*math.sin(phase_p))
     I=Eout_s**2+Eout_p**2
-
+#    if I>=1:
+#        print('esta malisimo')
     return Eout_s,Eout_p
 
 a,b=algoritmo(no,ne,go,ge,ang_i,eje,normal,angulo,ang_c,lamda,thick,sens,ni,Ei)
@@ -610,7 +715,8 @@ def alg_6_Ei(no,ne,go,ge,ang_i,eje,normal,angulo,ang_c,lamda,thick,sens,ni):
     for a in range(6):
         Ei=Ei_t[a]
         M,N=algoritmo(no,ne,go,ge,ang_i,eje,normal,angulo,ang_c,lamda,thick,sens,ni,Ei)
-
+    #    if M>1:
+    #        M=trans[a-1]
         pol_s.append(M)
         pol_p.append(N)
         
@@ -629,7 +735,8 @@ def alg_6_Ei(no,ne,go,ge,ang_i,eje,normal,angulo,ang_c,lamda,thick,sens,ni):
     J_out[1][4]=pol_p[4]    
     J_out[0][5]=pol_s[5]
     J_out[1][5]=pol_p[5]
-
+    
+#    print(J_out)
     J=np.dot(J_out,Jin_i)
     
     M=np.zeros((4,4))
@@ -648,273 +755,62 @@ M_teo=alg_6_Ei(no,ne,go,ge,ang_i,eje,normal,angulo,ang_c,lamda,thick,sens,ni)
 
 
 
-
 val_red=[]
 M_red=[]
-datos_totales=30000
+datos_totales=1000000
 for a in range(datos_totales):
-    no=random.uniform(1.5,1.6)
+    no=random.uniform(1.6,1.7)    
     ne=random.uniform(1.5,1.6)
-    thick=random.uniform(6.35,6.35)
-    angulo=random.uniform(0.0001,0.0001)
-    ang_c=random.uniform(40,44)
     
-    no=int(no*100000)/100000
-    ne=int(ne*100000)/100000
+    thick=random.uniform(3,3)
+    angulo=random.uniform(0.1,0.1)
+    ang_c=random.uniform(27,33)
+    
+    no=int(no*10000)/10000
+    ne=int(ne*10000)/10000
     thick=int(thick*100)/100
-    angulo=int(angulo*10000)/10000
+
     ang_c=int(ang_c*10)/10
     
-    
+    if no==ne:
+        ne=ne+random.uniform(-0.3,0.3)
+
     M=alg_6_Ei(no,ne,go,ge,ang_i,eje,normal,angulo,ang_c,lamda,thick,sens,ni)
     no=no*10
     ne=ne*10
     thick=thick*10   
     val_red.append([no,ne,ang_c])
-    M_red.append((M.real).reshape(1,16)[0])
 
+    M_red.append((M.real).reshape(1,16)[0])
 
 
 
 val_val=[]
 M_val=[]
 
-for a in range(int(datos_totales*0.4)):
-    no=random.uniform(1.5,1.6)
+for a in range(int(datos_totales*0.3)):
+    no=random.uniform(1.6,1.7)    
     ne=random.uniform(1.5,1.6)
-    thick=random.uniform(6.35,6.35)
-    angulo=random.uniform(0.0001,0.0001)
-    ang_c=random.uniform(40,44)
+
+    thick=random.uniform(3,3)
+    angulo=random.uniform(0.1,0.1)
+    ang_c=random.uniform(27,33)
     
-    no=int(no*100000)/100000
-    ne=int(ne*100000)/100000
+    no=int(no*10000)/10000
+    ne=int(ne*10000)/10000
     thick=int(thick*100)/100
-    angulo=int(angulo*10000)/10000
+
     ang_c=int(ang_c*10)/10
-    
+    if no==ne:
+        ne=ne+random.uniform(-0.3,0.3)
+        print(1)
     
     M=alg_6_Ei(no,ne,go,ge,ang_i,eje,normal,angulo,ang_c,lamda,thick,sens,ni)  
     no=no*10
     ne=ne*10
     thick=thick*10
     val_val.append([no,ne,ang_c])
-    M_val.append((M.real).reshape(1,16)[0])
-    
-    
-    
-    
-input_l=Input(shape=(16,))
 
-tower1=BatchNormalization(input_shape=(16,))(input_l)
-tower1=Dense(5000)(tower1)
-tower1=BatchNormalization()(tower1)
-tower1=Activation('elu')(tower1)
-tower1=Dropout(0.5)(tower1)
+    M_val.append((M.real).reshape(1,16)[0]) 
 
-tower2=BatchNormalization(input_shape=(16,))(input_l)
-tower2=Dense(5000)(tower2)
-tower2=BatchNormalization()(tower2)
-tower2=Activation('elu')(tower2)
-tower2=Dropout(0.5)(tower2)
-
-tower3=BatchNormalization(input_shape=(16,))(input_l)
-tower3=Dense(5000)(tower3)
-tower3=BatchNormalization()(tower3)
-tower3=Activation('elu')(tower3)
-tower3=Dropout(0.5)(tower3)
-
-tower4=BatchNormalization(input_shape=(16,))(input_l)
-tower4=Dense(5000)(tower4)
-tower4=BatchNormalization()(tower4)
-tower4=Activation('elu')(tower4)
-tower4=Dropout(0.5)(tower4)
-
-out1=keras.layers.concatenate([tower1,tower2,tower3,tower4])
-out1=Dense(2500)(out1)
-out1=BatchNormalization()(out1)
-out1=Activation('relu')(out1)
-out1=Dropout(0.5)(out1)
-out1=Dense(1250)(out1)
-out1=BatchNormalization()(out1)
-out1=Activation('relu')(out1)
-out1=Dropout(0.5)(out1)
-out1=Dense(1000)(out1)
-out1=BatchNormalization()(out1)
-out1=Activation('relu')(out1)
-out1=Dropout(0.5)(out1)
-
-
-tower11=BatchNormalization()(out1)
-tower11=Dense(2000)(tower11)
-tower11=BatchNormalization()(tower11)
-tower11=Activation('elu')(tower11)
-tower11=Dropout(0.5)(tower11)
-tower11=Dense(1000)(tower11)
-tower11=BatchNormalization()(tower11)
-tower11=Activation('elu')(tower11)
-tower11=Dropout(0.5)(tower11)
-
-tower12=BatchNormalization()(out1)
-tower12=Dense(2000)(tower12)
-tower12=BatchNormalization()(tower12)
-tower12=Activation('elu')(tower12)
-tower12=Dropout(0.5)(tower12)
-tower12=Dense(1000)(tower12)
-tower12=BatchNormalization()(tower12)
-tower12=Activation('elu')(tower12)
-tower12=Dropout(0.5)(tower12)
-
-tower13=BatchNormalization()(out1)
-tower13=Dense(2000)(tower13)
-tower13=BatchNormalization()(tower13)
-tower13=Activation('elu')(tower13)
-tower13=Dropout(0.5)(tower13)
-tower13=Dense(1000)(tower13)
-tower13=BatchNormalization()(tower13)
-tower13=Activation('elu')(tower13)
-tower13=Dropout(0.5)(tower13)
-
-tower14=BatchNormalization()(out1)
-tower14=Dense(2000)(tower14)
-tower14=BatchNormalization()(tower14)
-tower14=Activation('elu')(tower14)
-tower14=Dropout(0.5)(tower14)
-tower14=Dense(1000)(tower14)
-tower14=BatchNormalization()(tower14)
-tower14=Activation('elu')(tower14)
-tower14=Dropout(0.5)(tower14)
-
-
-out2=keras.layers.concatenate([tower11,tower12,tower13,tower14])
-out2=Dense(2000)(out2)
-out2=BatchNormalization()(out2)
-out2=Activation('relu')(out2)
-out2=Dropout(0.5)(out2)
-out2=Dense(1000)(out2)
-out2=BatchNormalization()(out2)
-out2=Activation('relu')(out2)
-out2=Dropout(0.5)(out2)
-out2=Dense(300)(out2)
-out2=BatchNormalization()(out2)
-out2=Activation('relu')(out2)
-out2=Dropout(0.5)(out2)
-
-
-tower21=BatchNormalization()(out2)
-tower21=Dense(2000)(tower21)
-tower21=BatchNormalization()(tower21)
-tower21=Activation('elu')(tower21)
-tower21=Dropout(0.5)(tower21)
-tower21=Dense(1500)(tower21)
-tower21=BatchNormalization()(tower21)
-tower21=Activation('elu')(tower21)
-tower21=Dropout(0.5)(tower21)
-
-tower22=BatchNormalization()(out2)
-tower22=Dense(2000)(tower22)
-tower22=BatchNormalization()(tower22)
-tower22=Activation('elu')(tower22)
-tower22=Dropout(0.5)(tower22)
-tower22=Dense(1500)(tower22)
-tower22=BatchNormalization()(tower22)
-tower22=Activation('elu')(tower22)
-tower22=Dropout(0.5)(tower22)
-
-tower23=BatchNormalization()(out2)
-tower23=Dense(2000)(tower23)
-tower23=BatchNormalization()(tower23)
-tower23=Activation('elu')(tower23)
-tower23=Dropout(0.5)(tower23)
-tower23=Dense(1500)(tower23)
-tower23=BatchNormalization()(tower23)
-tower23=Activation('elu')(tower23)
-tower23=Dropout(0.5)(tower23)
-
-tower24=BatchNormalization()(out2)
-tower24=Dense(2000)(tower24)
-tower24=BatchNormalization()(tower24)
-tower24=Activation('elu')(tower24)
-tower23=Dropout(0.5)(tower24)
-tower24=Dense(1500)(tower24)
-tower24=BatchNormalization()(tower24)
-tower24=Activation('elu')(tower24)
-tower24=Dropout(0.5)(tower24)
-
-out3=keras.layers.concatenate([tower21,tower22,tower23,tower24])
-out3=Dense(3000)(out3)
-out3=BatchNormalization()(out3)
-out3=Activation('relu')(out3)
-out3=Dropout(0.5)(out3)
-out3=Dense(1000)(out3)
-out3=BatchNormalization()(out3)
-out3=Activation('relu')(out3)
-out3=Dropout(0.5)(out3)
-out3=Dense(300)(out3)
-out3=BatchNormalization()(out3)
-out3=Activation('relu')(out3)
-out3=Dropout(0.5)(out3)
-out3=Dense(3)(out3)
-
-model=Model(inputs=input_l,outputs=out3)
-
-adam = Adam(lr=0.1,decay=0.1)
-
-model.compile(loss=losses.logcosh, optimizer=adam, metrics=['mean_squared_error'])
-tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
-print(model.summary())
-
-""" correciones de los datos obtenidos"""
-M_out_2=np.dot(val_red,1)
-M_out_v_2=np.dot(val_val,1)
-
-
-
-
-
-x=np.array(M_red)
-y=np.array(M_out_2)
-
-perdidas=[]
-pasos=[]
-perdidas_v=[]
-f=0
-
-x_v=np.array(M_val)
-y_v=np.array(M_out_v_2)
-
-
-error_no=[]
-error_ne=[]    
-
-
-M_o=np.ones((4,4),dtype=complex)*2
-k=0
-
-for i in range(3000):
-    history=model.fit(x, y, epochs=1, batch_size=1000, verbose=1,validation_data=(x_v,y_v))
-    predictions = model.predict(x)
-
-
-    for a in range(len(history.history['mean_squared_error'])):
-        perdidas.append(history.history['mean_squared_error'][a])
-        perdidas_v.append(history.history['val_mean_squared_error'])
-        pasos.append(f)
-        f=f+1
-    if i ==20:
-        adam=SGD(lr=0.05,decay=0.1,momentum=0.8)
-        model.compile(loss=losses.logcosh, optimizer=adam, metrics=['mean_squared_error'])
-        
-
-    print(model.predict((M_teo.real).reshape(1,16)))
-
-    print(model.predict((M_o.real).reshape(1,16)))
-    if history.history['val_mean_squared_error'][0]<0.4:
-        break
-print('')
-print('Valores obtenidos para la matriz experimental')  
-print(model.predict((M_teo.real).reshape(1,16)))
-print(model.predict((M_o.real).reshape(1,16)))
-plt.plot(pasos,perdidas)
-plt.plot(pasos,perdidas_v)
-plt.show()    
     
