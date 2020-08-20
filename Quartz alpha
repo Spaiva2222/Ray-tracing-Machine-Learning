@@ -1,4 +1,4 @@
-
+    
 import numpy as np
 import cmath as math
 
@@ -72,6 +72,9 @@ M_KDP[3][0]=0
 M_KDP[3][1]=0
 M_KDP[3][2]=0
 M_KDP[3][3]=4.19602954e-01
+
+no_KDP=1.5006
+ne_KDP=1.4629
 
 def var_i(angulo,ang_c):
     ang=angulo*math.pi/180
